@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Molecular Property Classifier</title>
+  <link rel="stylesheet" href="VIT.css" />
+  <style>
+    /* Optional: add spinner styling here if not in VIT.css */
+    .vitSpinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: #000;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="vit">
+    <div class="vitApp">
+      <div class="vitContainer">
+        <header class="vitHeader">
+          <h1 class="vitTitle">Molecular Property Classifier</h1>
+          <div class="vitSubtitle">Vision Transformer (ViT) Model</div>
+        </header>
+        
+        <main class="vitMainContent">
+          <form id="vitForm" class="vitForm">
+            <div class="vitFormGroup">
+              <label for="smiles" class="vitLabel">SMILES String:</label>
+              <div class="vitInputContainer">
+                <input
+                  type="text"
+                  id="smiles"
+                  class="vitInput"
+                  placeholder="e.g., CCO for ethanol"
+                  required
+                />
+              </div>
+            </div>
+            <button type="submit" id="submitBtn" class="vitButton">
+              Predict Properties
+            </button>
+          </form>
+
+          <div id="errorContainer" class="vitErrorMessage" style="display: none;">
+            <div class="vitErrorIcon">!</div>
+            <div class="vitErrorText">
+              <strong>Error:</strong> <span id="errorText"></span>
+            </div>
+          </div>
+
+          <div id="resultCard" class="vitResultCard" style="display: none;">
+            <div class="vitResultHeader">
+              <div class="vitResultIcon">✓</div>
+              <h2 class="vitResultTitle">Prediction Result</h2>
+            </div>
+            <div class="vitResultContent">
+              <div class="vitResultItem">
+                <span class="vitResultLabel">SMILES:</span>
+                <span id="resultSmiles" class="vitResultValue vitSmiles"></span>
+              </div>
+              <div class="vitResultItem">
+                <span class="vitResultLabel">Predicted Class:</span>
+                <span id="resultClass" class="vitResultValue vitClass"></span>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <footer class="vitFooter">
+          <div class="vitFooterText">Powered by Vision Transformer Technology</div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('vitForm');
+    const smilesInput = document.getElementById('smiles');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorContainer = document.getElementById('errorContainer');
+    const errorText = document.getElementById('errorText');
+    const resultCard = document.getElementById('resultCard');
+    const resultSmiles = document.getElementById('resultSmiles');
+    const resultClass = document.getElementById('resultClass');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const smiles = smilesInput.value.trim();
+      if (!smiles) {
+        errorText.textContent = 'Please enter a SMILES string';
+        errorContainer.style.display = 'block';
+        resultCard.style.display = 'none';
+        return;
+      }
+
+      errorContainer.style.display = 'none';
+      resultCard.style.display = 'none';
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="vitSpinner"></span><span>Processing...</span>';
+
+      try {
+        const response = await fetch('http://localhost:5000/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ smiles })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Prediction failed');
+        }
+
+        const data = await response.json();
+        resultSmiles.textContent = data.smiles;
+        resultClass.textContent = data.predicted_class;
+        resultCard.style.display = 'block';
+      } catch (err) {
+        errorText.textContent = err.message;
+        errorContainer.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Predict Properties';
+      }
+    });
+  </script>
+</body>
+</html>
